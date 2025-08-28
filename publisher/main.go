@@ -38,12 +38,25 @@ func main() {
 	}
 	fmt.Print(response)
 	
-	for true{
-		func(db *gorm.DB){
+	for {
+		func(db *gorm.DB,client *redis.Client){
 			var cueeWebsites []Website
 			db.Find(&cueeWebsites)
 			fmt.Println(cueeWebsites)
-		}(db)
+
+			ctx := context.Background()
+			for _,rec := range cueeWebsites{
+				response,err = client.XAdd(ctx,&redis.XAddArgs{
+					Stream: "websites",
+					Values: map[string]interface{}{
+						"site": rec,
+					},
+					ID: "0-2",
+				}).Result()
+			}
+
+		}(db,client)
+		
 		time.Sleep(3 * time.Second)
 	}
 }
