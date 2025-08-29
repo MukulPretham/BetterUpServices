@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/redis/go-redis/v9"
 	"math/rand"
-	"net/http"
 )
 
 // import (
@@ -54,26 +53,7 @@ func main() {
 				if err := json.Unmarshal([]byte(currMesssage), &m); err != nil {
 					panic("error parsing string")
 				}
-
-				fmt.Println(m["Url"])
-				if res, err := http.Get(fmt.Sprintf("https://%s", m["Url"])); err != nil {
-					db := connectDB()
-						for _, regionId := range getRegions(&db) {
-							setStatus(&db, getSiteId(&db, m["Url"]), regionId, false)	
-						}
-				} else {
-					if res.StatusCode == 200 {
-						db := connectDB()
-						for _, regionId := range getRegions(&db) {
-							setStatus(&db, getSiteId(&db, m["Url"]), regionId, true)	
-						}
-					} else {
-						db := connectDB()
-						for _, regionId := range getRegions(&db) {
-							setStatus(&db, getSiteId(&db, m["Url"]), regionId, false)	
-						}
-					}
-				}
+				go WriteToDB(m["Url"])
 			}
 			client.XAck(ctx, "websites", "consumerGroup", msg.ID)
 		}
