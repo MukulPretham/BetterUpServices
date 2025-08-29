@@ -1,4 +1,4 @@
-module mukulpretham/betterUpServices
+module mukulpretham/betterUpPublisher
 
 go 1.24.3
 

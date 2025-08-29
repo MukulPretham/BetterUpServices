@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	
 	"time"
 
 	"gorm.io/driver/postgres"
@@ -21,12 +23,14 @@ func main() {
 	if err != nil {
 		log.Fatal("unable to connect ot the database")
 	}
+	//Creating redis client
 	client := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
 		Password: "",
 		DB:       0,
 		Protocol: 2,
 	})
+
 	// Create redis consumerGroup and a stream
 	ctx := context.Background()
 	response, err := client.XGroupCreateMkStream(ctx, "websites", "consumerGroup", "$").Result()
@@ -42,21 +46,25 @@ func main() {
 		func(db *gorm.DB,client *redis.Client){
 			var cueeWebsites []Website
 			db.Find(&cueeWebsites)
-			fmt.Println(cueeWebsites)
 
 			ctx := context.Background()
+			
 			for _,rec := range cueeWebsites{
+				data, err := json.Marshal(rec)
+				if err != nil {
+					log.Println("Failed to marshal:", err)
+					continue
+				}
 				response,err = client.XAdd(ctx,&redis.XAddArgs{
 					Stream: "websites",
-					Values: map[string]interface{}{
-						"site": rec,
+					Values: map[string]any{
+						"site": string(data),
 					},
-					ID: "0-2",
 				}).Result()
 			}
 
 		}(db,client)
-		
+		fmt.Println("iteration completed")
 		time.Sleep(3 * time.Second)
 	}
 }
