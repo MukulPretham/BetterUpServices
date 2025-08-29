@@ -1,11 +1,11 @@
 package main
 
-import "time"
+
 type Status struct{
+	Id string  `gorm:"column:id"`
 	SiteId string  `gorm:"column:siteId"`
 	RegionId string  `gorm:"column:regionId"`
 	Status bool  `gorm:"column:status"`
-	Time time.Time  `gorm:"column:time"`
 }
 
 type Region struct{

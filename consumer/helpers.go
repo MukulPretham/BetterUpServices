@@ -3,7 +3,6 @@ package main
 import (
 	// "fmt"
 	"log"
-	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -36,12 +35,7 @@ func getSiteId(db *gorm.DB,url string)string{
 }
 
 func setStatus(db *gorm.DB,siteId string, regionId string, status bool)bool{
-	err := db.Create(&Status{
-		SiteId: siteId,
-		RegionId: regionId,
-		Status: status,
-		Time: time.Now(),
-	})
+	err := db.Model(&Status{}).Where(`"siteId" = ?`,siteId).Update("status",status)
 	if err.Error != nil{
 		return false
 	}

@@ -6,7 +6,6 @@ import (
 
 	"fmt"
 	"github.com/redis/go-redis/v9"
-	"log"
 	"math/rand"
 	"net/http"
 )
@@ -58,13 +57,21 @@ func main() {
 
 				fmt.Println(m["Url"])
 				if res, err := http.Get(fmt.Sprintf("https://%s", m["Url"])); err != nil {
-					log.Fatal("error while fetch")
-					panic("")
+					db := connectDB()
+						for _, regionId := range getRegions(&db) {
+							setStatus(&db, getSiteId(&db, m["Url"]), regionId, false)	
+						}
 				} else {
 					if res.StatusCode == 200 {
-
+						db := connectDB()
+						for _, regionId := range getRegions(&db) {
+							setStatus(&db, getSiteId(&db, m["Url"]), regionId, true)	
+						}
 					} else {
-
+						db := connectDB()
+						for _, regionId := range getRegions(&db) {
+							setStatus(&db, getSiteId(&db, m["Url"]), regionId, false)	
+						}
 					}
 				}
 			}
@@ -80,9 +87,8 @@ func main() {
 
 // func main(){
 // 	db := connectDB()
-// 	fmt.Println(getRegions(&db))
 // 	for _,regionId := range getRegions(&db){
-// 		setStatus(&db,getSiteId(&db,"www.google.com"),regionId,false)
+// 		fmt.Print(setStatus(&db,getSiteId(&db,"www.google.com"),regionId,true))
 // 	}
 // }
 
