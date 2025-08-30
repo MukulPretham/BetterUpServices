@@ -8,13 +8,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math/rand"
+	"mukulpretham/betterUpPublisher/utils"
 
 	"github.com/redis/go-redis/v9"
 )
 
 func main() {
-
+	
 	// Redis client created
 	client := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
@@ -22,8 +24,11 @@ func main() {
 		DB:       0,
 		Protocol: 2,
 	})
-
 	ctx := context.Background()
+
+	if err := utils.CreateRedisGroup(client,"notifications","ntGroup"); err != nil{
+		log.Fatal("redis error")
+	}
 
 	for {
 		// Read messages form redis stremas via a consumer group

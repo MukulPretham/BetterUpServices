@@ -7,6 +7,8 @@ import (
 	
 	"time"
 
+	"mukulpretham/betterUpPublisher/utils"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -32,19 +34,13 @@ func main() {
 	})
 
 	// Create redis consumerGroup and a stream
-	ctx := context.Background()
-	response, err := client.XGroupCreateMkStream(ctx, "websites", "consumerGroup", "$").Result()
-	if err != nil {
-		if err.Error() != "BUSYGROUP Consumer Group name already exists" {
-			log.Fatalf("failed to create consumer group: %v", err)
-		}
-		fmt.Print("group already exist")
+	redisErr := utils.CreateRedisGroup(client,"websites","consumerGroup")
+	if redisErr != nil{
+		log.Fatal("redis error")
 	}
-	fmt.Print(response)
-	
 	for {
 		func(db *gorm.DB,client *redis.Client){
-			var cueeWebsites []Website
+			var cueeWebsites []utils.Website
 			db.Find(&cueeWebsites)
 
 			ctx := context.Background()
@@ -55,12 +51,13 @@ func main() {
 					log.Println("Failed to marshal:", err)
 					continue
 				}
-				response,err = client.XAdd(ctx,&redis.XAddArgs{
+				response,err := client.XAdd(ctx,&redis.XAddArgs{
 					Stream: "websites",
 					Values: map[string]any{
 						"site": string(data),
 					},
 				}).Result()
+				fmt.Print(response)
 			}
 
 		}(db,client)
