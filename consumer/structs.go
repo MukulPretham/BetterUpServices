@@ -28,6 +28,12 @@ type Website struct {
 	Url  string
 }
 
+type StreamMsg struct {
+	Id   string
+	Name string
+	Url  string
+}
+
 func (Region) TableName() string {
 	return "Region"
 }

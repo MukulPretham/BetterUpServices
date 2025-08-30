@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+
 )
 
 // Connect to database and get all websites
@@ -70,13 +71,21 @@ func setLatency(db *gorm.DB, siteId string, regionId string, latency float64) {
 }
 
 func fetch(url string) int {
-	res, err := http.Get(fmt.Sprintf("https://%s", url))
-	fmt.Print(err)
-	if res.StatusCode == 200 {
-		return 200
-	} else {
-		return 0
-	}
+    client := &http.Client{
+        Timeout: 15 * time.Second, // set a timeout
+    }
+
+    res, err := client.Get(fmt.Sprintf("https://%s", url))
+    if err != nil {
+        fmt.Println("Request error:", err)
+        return 0
+    }
+    defer res.Body.Close() // always close body
+
+    if res.StatusCode == 200 {
+        return 200
+    }
+    return 0
 }
 
 func WriteToDB(url string) {
@@ -95,12 +104,15 @@ func WriteToDB(url string) {
 		log.Fatal(err)
 	}
 
+	currSiteId := getSiteId(&db, url)
+
 	if res == 200 {
-		setStatus(&db, getSiteId(&db, url), currRegionId, true)
-		setLatency(&db, getSiteId(&db, url), currRegionId, currLatency)
+		setStatus(&db, currSiteId, currRegionId, true)
+		setLatency(&db, currSiteId, currRegionId, currLatency)
 	} else {
-		setLatency(&db, getSiteId(&db, url), currRegionId, 404)
-		setStatus(&db, getSiteId(&db, url), currRegionId, false)
+		setLatency(&db, currSiteId, currRegionId, 404)
+		setStatus(&db, currSiteId, currRegionId, false)
+		// Adding this failed siteId to notifications queue
 	}
 	fmt.Println("updated", url)
 }

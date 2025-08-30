@@ -1,18 +1,17 @@
 package main
 
+// TODOs
+// handel consumer dead situation
+// Notification feature.
+
 import (
 	"context"
 	"encoding/json"
-
 	"fmt"
-	"github.com/redis/go-redis/v9"
 	"math/rand"
-)
 
-// import (
-// 	"fmt"
-// 	"os"
-// )
+	"github.com/redis/go-redis/v9"
+)
 
 func main() {
 
@@ -52,6 +51,7 @@ func main() {
 		for _, msg := range res[0].Messages {
 			if currMesssage, ok := msg.Values["site"].(string); ok {
 				var m map[string]string
+				// Parsing to JSON.
 				if err := json.Unmarshal([]byte(currMesssage), &m); err != nil {
 					panic("error parsing string")
 				}
@@ -59,26 +59,6 @@ func main() {
 			}
 			client.XAck(ctx, "websites", "consumerGroup", msg.ID)
 		}
-
-		//Check website ping
-		//Update database
-		//Acknowledge the message
-
 	}
 }
 
-// func main(){
-// 	db := connectDB()
-// 	if env := os.Getenv("REGION"); env != ""{
-// 		fmt.Print(getRegionId(&db,env))
-// 	}else{
-// 		fmt.Print("no env variable was passed")
-// 	}
-	
-// }
-
-type StreamMsg struct {
-	Id   string
-	Name string
-	Url  string
-}
