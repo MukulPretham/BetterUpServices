@@ -11,6 +11,7 @@ import (
 
 // import (
 // 	"fmt"
+// 	"os"
 // )
 
 func main() {
@@ -24,7 +25,7 @@ func main() {
 	})
 
 	ctx := context.Background()
-	
+
 	for {
 		// Read messages form redis stremas via a consumer group
 		res, err := client.XReadGroup(ctx, &redis.XReadGroupArgs{
@@ -68,9 +69,12 @@ func main() {
 
 // func main(){
 // 	db := connectDB()
-// 	for _,regionId := range getRegions(&db){
-// 		fmt.Print(setStatus(&db,getSiteId(&db,"www.google.com"),regionId,true))
+// 	if env := os.Getenv("REGION"); env != ""{
+// 		fmt.Print(getRegionId(&db,env))
+// 	}else{
+// 		fmt.Print("no env variable was passed")
 // 	}
+	
 // }
 
 type StreamMsg struct {

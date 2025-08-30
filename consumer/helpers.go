@@ -2,9 +2,11 @@ package main
 
 import (
 	// "fmt"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/google/uuid"
@@ -32,10 +34,14 @@ func getRegions(db *gorm.DB) []string {
 	return regionList
 }
 
-func getRegionId(db *gorm.DB,regionName string)string{
+func getRegionId(db *gorm.DB, regionName string) (string,error) {
 	var currRegion Region
-	db.Where("name = ?",regionName).First(&currRegion)
-	return currRegion.Id
+	err := db.Where("name = ?", regionName).First(&currRegion)
+	if err.Error == nil {
+		return currRegion.Id,nil
+	}else{
+		return "",errors.New("region wich was passed via env variable is not a valid region")
+	}
 }
 
 func getSiteId(db *gorm.DB, url string) string {
@@ -45,69 +51,56 @@ func getSiteId(db *gorm.DB, url string) string {
 }
 
 func setStatus(db *gorm.DB, siteId string, regionId string, status bool) bool {
-	err := db.Model(&Status{}).Where(`"siteId" = ?`, siteId).Update("status", status)
+	err := db.Model(&Status{}).Where(`"siteId" = ? AND "regionId" = ?`, siteId,regionId).Update("status", status)
 	if err.Error != nil {
 		return false
 	}
 	return true
 }
 
-func setLatency(db *gorm.DB,siteId string, regionId string,latency float64){
+func setLatency(db *gorm.DB, siteId string, regionId string, latency float64) {
 	latencyRepot := Latency{
-		Id: uuid.NewString(),
-		SiteId: siteId,
+		Id:       uuid.NewString(),
+		SiteId:   siteId,
 		RegionId: regionId,
-		Latency: latency,
-		Time: time.Now(),
+		Latency:  latency,
+		Time:     time.Now(),
 	}
 	db.Create(&latencyRepot)
 }
 
-func fetch(url string)int{
+func fetch(url string) int {
 	res, err := http.Get(fmt.Sprintf("https://%s", url))
 	fmt.Print(err)
-	if res.StatusCode == 200{
+	if res.StatusCode == 200 {
 		return 200
-	}else{
+	} else {
 		return 0
 	}
 }
 
 func WriteToDB(url string) {
-	start := time.Now()
 	var currLatency float64
-	
-	res := fetch(url)
-	currLatency = float64(time.Since(start).Milliseconds())
-	if res == 0 {
-		db := connectDB()
 
-		for _, regionId := range getRegions(&db) {
-			setLatency(&db, getSiteId(&db, url), regionId, 404)
-		}
-		
-		for _, regionId := range getRegions(&db) {
-			setStatus(&db, getSiteId(&db, url), regionId, false)
-		}
-	} else {
-		
-		if res == 200 {
-			db := connectDB()
-			for _, regionId := range getRegions(&db) {
-				setStatus(&db, getSiteId(&db, url), regionId, true)
-			}
-			for _, regionId := range getRegions(&db) {
-				setLatency(&db, getSiteId(&db, url), regionId,currLatency)
-			}
-		} else {
-			db := connectDB()
-			for _, regionId := range getRegions(&db) {
-				setStatus(&db, getSiteId(&db, url), regionId, false)
-			}
-			for _, regionId := range getRegions(&db) {
-				setLatency(&db, getSiteId(&db, url), regionId,404)
-			}
-		}
+	start := time.Now()
+	
+	db := connectDB()
+	res := fetch(url)
+
+	currLatency = float64(time.Since(start).Milliseconds())
+
+	env := os.Getenv("REGION")
+	currRegionId,err := getRegionId(&db, env)
+	if err != nil{
+		log.Fatal(err)
 	}
-	fmt.Println("updated",url)
+
+	if res == 200 {
+		setStatus(&db, getSiteId(&db, url), currRegionId, true)
+		setLatency(&db, getSiteId(&db, url), currRegionId, currLatency)
+	} else {
+		setLatency(&db, getSiteId(&db, url), currRegionId, 404)
+		setStatus(&db, getSiteId(&db, url), currRegionId, false)
+	}
+	fmt.Println("updated", url)
 }
