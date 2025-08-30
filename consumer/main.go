@@ -24,6 +24,7 @@ func main() {
 	})
 
 	ctx := context.Background()
+	
 	for {
 		// Read messages form redis stremas via a consumer group
 		res, err := client.XReadGroup(ctx, &redis.XReadGroupArgs{

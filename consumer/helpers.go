@@ -32,6 +32,12 @@ func getRegions(db *gorm.DB) []string {
 	return regionList
 }
 
+func getRegionId(db *gorm.DB,regionName string)string{
+	var currRegion Region
+	db.Where("name = ?",regionName).First(&currRegion)
+	return currRegion.Id
+}
+
 func getSiteId(db *gorm.DB, url string) string {
 	var website Website
 	db.Where("url = ?", url).First(&website)
