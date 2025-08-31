@@ -2,9 +2,7 @@ package utils
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"log"
 	"math/rand"
 
 	"github.com/redis/go-redis/v9"
@@ -19,17 +17,15 @@ func CreateRedisClient(Addr string,DB int, Password string, Protocol int) *redis
 	})
 }
 
-func CreateRedisGroup(client *redis.Client, streamName string, gorupName string)error{
+func CreateRedisGroup(client *redis.Client, streamName string, gorupName string)(string,error){
 	ctx := context.Background()
 	_, err := client.XGroupCreateMkStream(ctx, streamName, gorupName, "$").Result()
 	if err != nil {
 		if err.Error() != "BUSYGROUP Consumer Group name already exists" {
-			log.Fatalf("failed to create consumer group: %v", err)
-			return errors.New("redis error")
+			return "",fmt.Errorf("redis error: %v",err)
 		}
-		fmt.Print("group already exist")	
 	}
-	return nil
+	return "group already exist",nil
 }
 
 func ReadXGroup(client *redis.Client ,stream []string,gorupName string,)([]redis.XStream,error){

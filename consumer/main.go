@@ -6,6 +6,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 
 	"mukulpretham/betterUpPublisher/utils"
@@ -15,10 +16,12 @@ func main() {
 	
 	// Redis client created
 	client := utils.CreateRedisClient("localhost:6379",0,"",2)
-
-	if err := utils.CreateRedisGroup(client,"notifications","ntGroup"); err != nil{
-		log.Fatal("redis error")
+	
+	res,err := utils.CreateRedisGroup(client,"notifications","ntGroup");
+	if err != nil{
+		log.Fatal(err)
 	}
+	fmt.Print(res)
 
 	for {
 		// Read messages form redis stremas via a consumer group

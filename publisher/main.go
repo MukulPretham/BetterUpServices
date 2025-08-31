@@ -29,10 +29,11 @@ func main() {
 	client := utils.CreateRedisClient("localhost:6379",0,"",2)
 
 	// Create redis consumerGroup and a stream
-	redisErr := utils.CreateRedisGroup(client,"websites","consumerGroup")
-	if redisErr != nil{
-		log.Fatal("redis error")
+	res,err := utils.CreateRedisGroup(client,"websites","consumerGroup")
+	if err != nil{
+		log.Fatal(err)
 	}
+	fmt.Printf(res)
 	for {
 		func(db *gorm.DB,client *redis.Client){
 			var cueeWebsites []utils.Website

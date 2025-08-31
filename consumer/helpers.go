@@ -114,6 +114,7 @@ func WriteToDB(url string,client *redis.Client,ID string ) {
 		setLatency(&db, currSiteId, currRegionId, 404)
 		setStatus(&db, currSiteId, currRegionId, false)
 		// Adding this failed siteId to notifications queue
+		
 	}
 	fmt.Println("updated", url)
 	ctx := context.Background()
