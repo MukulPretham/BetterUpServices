@@ -5,26 +5,16 @@ package main
 // Notification feature.
 
 import (
-	"context"
 	"encoding/json"
-	"fmt"
 	"log"
-	"math/rand"
-	"mukulpretham/betterUpPublisher/utils"
 
-	"github.com/redis/go-redis/v9"
+	"mukulpretham/betterUpPublisher/utils"
 )
 
 func main() {
 	
 	// Redis client created
-	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
-		DB:       0,
-		Protocol: 2,
-	})
-	ctx := context.Background()
+	client := utils.CreateRedisClient("localhost:6379",0,"",2)
 
 	if err := utils.CreateRedisGroup(client,"notifications","ntGroup"); err != nil{
 		log.Fatal("redis error")
@@ -32,26 +22,10 @@ func main() {
 
 	for {
 		// Read messages form redis stremas via a consumer group
-		res, err := client.XReadGroup(ctx, &redis.XReadGroupArgs{
-			Streams:  []string{"websites", ">"},
-			Group:    "consumerGroup",
-			Consumer: fmt.Sprintf("consumerGroup%d", rand.Intn(1000)),
-			Block:    0,
-			Count:    1,
-		}).Result()
+		res,err := utils.ReadXGroup(client,[]string{"websites",">"},"consumerGroup")
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
-		// res structure
-		// [{
-		// 	  Stream
-		// 	  Messages	: [{
-		// 	     ID
-		// 	     Values : {
-		//		   // data stores in redis
-		//       }
-		//    }]
-		// }]
 
 		for _, msg := range res[0].Messages {
 			if currMesssage, ok := msg.Values["site"].(string); ok {
@@ -60,9 +34,8 @@ func main() {
 				if err := json.Unmarshal([]byte(currMesssage), &m); err != nil {
 					panic("error parsing string")
 				}
-				go WriteToDB(m["Url"])
+				go WriteToDB(m["Url"],client,msg.ID)
 			}
-			client.XAck(ctx, "websites", "consumerGroup", msg.ID)
 		}
 	}
 }

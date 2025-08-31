@@ -2,6 +2,7 @@ package main
 
 import (
 	// "fmt"
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -10,9 +11,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-
 )
 
 // Connect to database and get all websites
@@ -25,15 +26,15 @@ func connectDB() gorm.DB {
 	return *db
 }
 
-func getRegions(db *gorm.DB) []string {
-	var regions []Region
-	db.Find(&regions)
-	var regionList []string
-	for _, region := range regions {
-		regionList = append(regionList, region.Id)
-	}
-	return regionList
-}
+// func getRegions(db *gorm.DB) []string {
+// 	var regions []Region
+// 	db.Find(&regions)
+// 	var regionList []string
+// 	for _, region := range regions {
+// 		regionList = append(regionList, region.Id)
+// 	}
+// 	return regionList
+// }
 
 func getRegionId(db *gorm.DB, regionName string) (string,error) {
 	var currRegion Region
@@ -88,7 +89,7 @@ func fetch(url string) int {
     return 0
 }
 
-func WriteToDB(url string) {
+func WriteToDB(url string,client *redis.Client,ID string ) {
 	var currLatency float64
 
 	start := time.Now()
@@ -115,4 +116,6 @@ func WriteToDB(url string) {
 		// Adding this failed siteId to notifications queue
 	}
 	fmt.Println("updated", url)
+	ctx := context.Background()
+	client.XAck(ctx, "websites", "consumerGroup", ID)
 }

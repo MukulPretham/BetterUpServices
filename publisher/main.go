@@ -26,12 +26,7 @@ func main() {
 		log.Fatal("unable to connect ot the database")
 	}
 	//Creating redis client
-	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
-		DB:       0,
-		Protocol: 2,
-	})
+	client := utils.CreateRedisClient("localhost:6379",0,"",2)
 
 	// Create redis consumerGroup and a stream
 	redisErr := utils.CreateRedisGroup(client,"websites","consumerGroup")
