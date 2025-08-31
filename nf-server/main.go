@@ -2,7 +2,7 @@ package main
 
 import (
 	// "encoding/json"
-	"context"
+	// "context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -25,6 +25,5 @@ func main() {
 		if err := json.Unmarshal([]byte(currMessage),&m); err==nil{
 			fmt.Println(m["siteId"])
 		}
-		client.XAck(context.Background(),"notifications","notificationGroup",readRes[0].ID)
 	}
 }

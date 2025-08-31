@@ -37,13 +37,13 @@ func connectDB() gorm.DB {
 // 	return regionList
 // }
 
-func getRegionId(db *gorm.DB, regionName string) (string,error) {
+func getRegionId(db *gorm.DB, regionName string) (string, error) {
 	var currRegion Region
 	err := db.Where("name = ?", regionName).First(&currRegion)
 	if err.Error == nil {
-		return currRegion.Id,nil
-	}else{
-		return "",errors.New("region wich was passed via env variable is not a valid region")
+		return currRegion.Id, nil
+	} else {
+		return "", errors.New("region wich was passed via env variable is not a valid region")
 	}
 }
 
@@ -54,11 +54,20 @@ func getSiteId(db *gorm.DB, url string) string {
 }
 
 func setStatus(db *gorm.DB, siteId string, regionId string, status bool) bool {
-	err := db.Model(&Status{}).Where(`"siteId" = ? AND "regionId" = ?`, siteId,regionId).Update("status", status)
+	err := db.Model(&Status{}).Where(`"siteId" = ? AND "regionId" = ?`, siteId, regionId).Update("status", status)
 	if err.Error != nil {
 		return false
 	}
 	return true
+}
+
+func GetStatus(db *gorm.DB, siteId string, regionId string) bool {
+	var currSite Status
+	err := db.Model(&Status{}).Where(`"siteId" = ? AND "regionId" = ?`, siteId, regionId).First(&currSite)
+	if err.Error != nil {
+		return false
+	}
+	return currSite.Status
 }
 
 func setLatency(db *gorm.DB, siteId string, regionId string, latency float64) {
@@ -73,36 +82,36 @@ func setLatency(db *gorm.DB, siteId string, regionId string, latency float64) {
 }
 
 func fetch(url string) int {
-    client := &http.Client{
-        Timeout: 15 * time.Second, // set a timeout
-    }
+	client := &http.Client{
+		Timeout: 15 * time.Second, // set a timeout
+	}
 
-    res, err := client.Get(fmt.Sprintf("https://%s", url))
-    if err != nil {
-        fmt.Println("Request error:", err)
-        return 0
-    }
-    defer res.Body.Close() // always close body
+	res, err := client.Get(fmt.Sprintf("https://%s", url))
+	if err != nil {
+		fmt.Println("Request error:", err)
+		return 0
+	}
+	defer res.Body.Close() // always close body
 
-    if res.StatusCode == 200 {
-        return 200
-    }
-    return 0
+	if res.StatusCode == 200 {
+		return 200
+	}
+	return 0
 }
 
-func WriteToDB(url string,client *redis.Client,ID string ) {
+func WriteToDB(url string, client *redis.Client, ID string) {
 	var currLatency float64
 
 	start := time.Now()
-	
+
 	db := connectDB()
 	res := fetch(url)
 
 	currLatency = float64(time.Since(start).Milliseconds())
 
 	env := os.Getenv("REGION")
-	currRegionId,err := getRegionId(&db, env)
-	if err != nil{
+	currRegionId, err := getRegionId(&db, env)
+	if err != nil {
 		log.Fatal(err)
 	}
 
@@ -112,19 +121,23 @@ func WriteToDB(url string,client *redis.Client,ID string ) {
 		setStatus(&db, currSiteId, currRegionId, true)
 		setLatency(&db, currSiteId, currRegionId, currLatency)
 	} else {
+		prevState := GetStatus(&db, currSiteId, currRegionId)
 		setLatency(&db, currSiteId, currRegionId, 404)
 		setStatus(&db, currSiteId, currRegionId, false)
 		// Adding this failed siteId to notifications queue
-		data, err := json.Marshal(map[string]string{"siteId": currSiteId})
-		if err != nil{
-			fmt.Println("error while writing to redis stream : &%v ",err)
+		
+		if prevState == true {
+			data, err := json.Marshal(map[string]string{"siteId": currSiteId})
+			if err != nil {
+				fmt.Println("error while writing to redis stream : &%v ", err)
+			}
+			client.XAdd(context.Background(), &redis.XAddArgs{
+				Stream: "notifications",
+				Values: map[string]any{
+					"site": string(data),
+				},
+			})
 		}
-		client.XAdd(context.Background(),&redis.XAddArgs{
-			Stream: "notifications",
-			Values: map[string]any{
-				"site": string(data),
-			},
-		})
 	}
 	fmt.Println("updated", url)
 	ctx := context.Background()
