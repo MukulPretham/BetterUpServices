@@ -28,7 +28,7 @@ func CreateRedisGroup(client *redis.Client, streamName string, gorupName string)
 	return "group already exist",nil
 }
 
-func ReadXGroup(client *redis.Client ,stream []string,gorupName string,)([]redis.XStream,error){
+func ReadXGroup(client *redis.Client ,stream []string,gorupName string,)([]redis.XMessage,error){
 	ctx := context.Background()
 	res, err := client.XReadGroup(ctx, &redis.XReadGroupArgs{
 		Streams:  stream,
@@ -40,5 +40,5 @@ func ReadXGroup(client *redis.Client ,stream []string,gorupName string,)([]redis
 	if err != nil{
 		return nil,fmt.Errorf("redis XGroupRead error: %w",err)
 	}
-	return res,nil
+	return res[0].Messages,nil
 }

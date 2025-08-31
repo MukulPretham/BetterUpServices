@@ -3,6 +3,7 @@ package main
 import (
 	// "fmt"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -114,7 +115,16 @@ func WriteToDB(url string,client *redis.Client,ID string ) {
 		setLatency(&db, currSiteId, currRegionId, 404)
 		setStatus(&db, currSiteId, currRegionId, false)
 		// Adding this failed siteId to notifications queue
-		
+		data, err := json.Marshal(map[string]string{"siteId": currSiteId})
+		if err != nil{
+			fmt.Println("error while writing to redis stream : &%v ",err)
+		}
+		client.XAdd(context.Background(),&redis.XAddArgs{
+			Stream: "notifications",
+			Values: map[string]any{
+				"site": string(data),
+			},
+		})
 	}
 	fmt.Println("updated", url)
 	ctx := context.Background()
