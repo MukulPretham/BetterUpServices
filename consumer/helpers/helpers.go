@@ -1,4 +1,4 @@
-package main
+package helpers
 
 import (
 	// "fmt"
@@ -15,10 +15,11 @@ import (
 	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	
 )
 
 // Connect to database and get all websites
-func connectDB() gorm.DB {
+func ConnectDB() gorm.DB {
 	const dsn = "host=localhost user=postgres password=9059015626 dbname=postgres port=5432"
 	db, err := gorm.Open(postgres.Open(dsn))
 	if err != nil {
@@ -81,6 +82,20 @@ func setLatency(db *gorm.DB, siteId string, regionId string, latency float64) {
 	db.Create(&latencyRepot)
 }
 
+func GetEmails(db *gorm.DB,siteId string)[]string{
+	var currUserIds []UserToWebsite 
+	db.Find(&currUserIds,`"siteId"= ?`,siteId)
+	
+	var mails []string
+	for _,userId := range currUserIds{
+		
+		var currUser User
+		db.First(&currUser, "id = ?", userId.UserId)
+		mails = append(mails, currUser.Email)
+	}
+	return mails
+}
+
 func fetch(url string) int {
 	client := &http.Client{
 		Timeout: 15 * time.Second, // set a timeout
@@ -104,7 +119,7 @@ func WriteToDB(url string, client *redis.Client, ID string) {
 
 	start := time.Now()
 
-	db := connectDB()
+	db := ConnectDB()
 	res := fetch(url)
 
 	currLatency = float64(time.Since(start).Milliseconds())
@@ -143,3 +158,5 @@ func WriteToDB(url string, client *redis.Client, ID string) {
 	ctx := context.Background()
 	client.XAck(ctx, "websites", "consumerGroup", ID)
 }
+
+

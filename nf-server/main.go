@@ -1,15 +1,20 @@
 package main
 
 import (
-	// "encoding/json"
-	// "context"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
+	"mukulpretham/betterUpConsumer/helpers"
 	"mukulpretham/betterUpPublisher/utils"
+	"os"
+	
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	godotenv.Load()
 	client := utils.CreateRedisClient("localhost:6379", 0, "", 2)
 	_, err := utils.CreateRedisGroup(client, "notifications", "notificationGroup")
 	if err != nil {
@@ -21,9 +26,25 @@ func main() {
 			log.Fatal(readErr)
 		}
 		currMessage := readRes[0].Values["site"].(string)
-		m :=  make(map[string]string)
-		if err := json.Unmarshal([]byte(currMessage),&m); err==nil{
+		m := make(map[string]string)
+		if err := json.Unmarshal([]byte(currMessage), &m); err == nil {
 			fmt.Println(m["siteId"])
+			db := helpers.ConnectDB()
+			mails := helpers.GetEmails(&db, m["siteId"])
+			fmt.Print(mails)
+			
+			msg := fmt.Sprintf("From: " + os.Getenv("FromEmail") + "\r\n" +
+				"To: "  + "\r\n" +
+				"Subject: Website Down Alert\r\n" +
+				"MIME-Version: 1.0\r\n" +
+				"Content-Type: text/plain; charset=\"UTF-8\"\r\n\r\n you webiste with sidtId: %s was down",m["siteId"]) +
+				" "
+			err := SendMain(mails, msg)
+			if err != nil {
+				fmt.Print("failed to send eamil")
+			}
+			fmt.Print("sent")
+			client.XAck(context.Background(), "notifications", readRes[0].ID)
 		}
 	}
 }

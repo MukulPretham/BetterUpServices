@@ -1,6 +1,13 @@
-package main
+package helpers
 
 import "time"
+
+type User struct{
+	Id string `gorm:"column:id"`
+	Name string `gorm:"column:name"`
+	Password string `gorm:"column:password"`
+	Email string `gorm:"column:email"`
+}
 
 type Status struct {
 	Id       string `gorm:"column:id"`
@@ -34,6 +41,12 @@ type StreamMsg struct {
 	Url  string
 }
 
+type UserToWebsite struct {
+    Id     string `gorm:"column:id"`
+    UserId string `gorm:"column:userId"`
+    SiteId string `gorm:"column:siteId"`
+}
+
 func (Region) TableName() string {
 	return "Region"
 }
@@ -49,3 +62,12 @@ func (Website) TableName() string {
 func (Latency) TableName() string {
 	return "Latency"
 }
+
+func (UserToWebsite) TableName() string {
+	return "UserToWebsite"
+}
+
+func (User) TableName() string {
+	return "User"
+}
+

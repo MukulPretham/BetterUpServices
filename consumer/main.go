@@ -4,16 +4,30 @@ package main
 // handel consumer dead situation
 // Notification feature.
 
+// import (
+// 	"fmt"
+// 	"mukulpretham/betterUpConsumer/helpers"
+// 	"os"
+
+// 	"github.com/joho/godotenv"
+// )
+
 import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 
 	"mukulpretham/betterUpPublisher/utils"
+
+	"mukulpretham/betterUpConsumer/helpers"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	
+	godotenv.Load(".env")
+	fmt.Print(os.Getenv("SmptIP"))
 	// Redis client created
 	client := utils.CreateRedisClient("localhost:6379",0,"",2)
 
@@ -38,8 +52,14 @@ func main() {
 			if err := json.Unmarshal([]byte(currMesssage), &m); err != nil {
 				panic("error parsing string")
 			}
-			go WriteToDB(m["Url"],client,msg.ID)
+			go helpers.WriteToDB(m["Url"],client,msg.ID)
 		}
 	}
 }
+
+// func main(){
+// 	godotenv.Load(".env")
+// 	fmt.Print(os.Getenv("REGION"))
+// 	helpers.SendMain([]string{"schmunna@gmail.com"},"hi")
+// }
 
