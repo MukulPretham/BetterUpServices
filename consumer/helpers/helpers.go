@@ -20,7 +20,7 @@ import (
 
 // Connect to database and get all websites
 func ConnectDB() gorm.DB {
-	const dsn = "host=localhost user=postgres password=9059015626 dbname=postgres port=5432"
+	const dsn = "host=localhost user=postgres password=9059015626 dbname=postgres port=5432 sslmode=disable"
 	db, err := gorm.Open(postgres.Open(dsn))
 	if err != nil {
 		log.Fatal("unable to connect ot the database")
@@ -120,6 +120,11 @@ func WriteToDB(url string, client *redis.Client, ID string) {
 	start := time.Now()
 
 	db := ConnectDB()
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer sqlDB.Close()
 	res := fetch(url)
 
 	currLatency = float64(time.Since(start).Milliseconds())
