@@ -1,3 +1,1 @@
-./consumer/.env
-./publisher/.env
-./nf-server/.env
+*.env
