@@ -26,20 +26,24 @@ import (
 )
 
 func main() {
+	// Load the env file
 	godotenv.Load(".env")
-	fmt.Print(os.Getenv("SmptIP"))
+
+	//Cureent Consumer Group
+	currConsumerGroup := fmt.Sprintf("%sConsumerGroup",os.Getenv("REGION"))
+	
 	// Redis client created
 	client := utils.CreateRedisClient("localhost:6379",0,"",2)
 
-	res,err := utils.CreateRedisGroup(client,"notifications","ntGroup");
-	if err != nil{
+	// Create redis consumerGroup of the paticular region and a stream, if not exist
+	err := utils.CreateRedisGroup(client, "websites",currConsumerGroup )
+	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Print(res)
 
 	for {
 		// Read messages form redis stremas via a consumer group
-		res,err := utils.ReadXGroup(client,[]string{"websites",">"},"consumerGroup")
+		res,err := utils.ReadXGroup(client,[]string{"websites",">"},currConsumerGroup)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -56,10 +60,4 @@ func main() {
 		}
 	}
 }
-
-// func main(){
-// 	godotenv.Load(".env")
-// 	fmt.Print(os.Getenv("REGION"))
-// 	helpers.SendMain([]string{"schmunna@gmail.com"},"hi")
-// }
 

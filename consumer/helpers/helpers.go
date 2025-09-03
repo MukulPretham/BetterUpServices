@@ -142,12 +142,12 @@ func WriteToDB(url string, client *redis.Client, ID string) {
 		setLatency(&db, currSiteId, currRegionId, currLatency)
 	} else {
 		prevState := GetStatus(&db, currSiteId, currRegionId)
-		setLatency(&db, currSiteId, currRegionId, 404)
+		setLatency(&db, currSiteId, currRegionId, 0)
 		setStatus(&db, currSiteId, currRegionId, false)
 		// Adding this failed siteId to notifications queue
 		
 		if prevState == true {
-			data, err := json.Marshal(map[string]string{"siteId": currSiteId})
+			data, err := json.Marshal(map[string]string{"siteId": currSiteId,"regionId":currRegionId})
 			if err != nil {
 				fmt.Println("error while writing to redis stream : &%v ", err)
 			}
