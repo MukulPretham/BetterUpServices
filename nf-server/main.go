@@ -35,7 +35,7 @@ func main() {
 			}
 			defer sqlDB.Close()
 			mails := helpers.GetEmails(&db, m["siteId"])
-			fmt.Print(mails)
+			fmt.Println(mails)
 
 			msg := fmt.Sprintf("From: "+os.Getenv("FromEmail")+"\r\n"+
 				"To: "+"\r\n"+
@@ -47,7 +47,7 @@ func main() {
 			if err != nil {
 				fmt.Print("failed to send eamil")
 			}
-			fmt.Print("sent")
+			fmt.Println("sent")
 			client.XAck(context.Background(), "notifications", readRes[0].ID)
 		}
 	}

@@ -12,8 +12,6 @@ func SendMain(toAddress []string, message string)error{
 	err := smtp.SendMail(os.Getenv("SmptIP"),auth,os.Getenv("FromEmail"),toAddress,[]byte(message))
 	if err != nil{
 		return fmt.Errorf("%v",err)
-	}else{
-		return nil
 	}
 	return nil
 }

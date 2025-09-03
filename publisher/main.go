@@ -4,15 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-
 	"time"
 
 	"mukulpretham/betterUpPublisher/utils"
+	"mukulpretham/betterUpPublisher/redis_utils"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-
-	"context"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -43,7 +41,6 @@ func main() {
 		func(db *gorm.DB, client *redis.Client) {
 			var cueeWebsites []utils.Website
 			db.Find(&cueeWebsites)
-			ctx := context.Background()
 
 			for _, rec := range cueeWebsites {
 				data, err := json.Marshal(rec)
@@ -51,17 +48,12 @@ func main() {
 					log.Println("Failed to marshal:", err)
 					continue
 				}
-				response, err := client.XAdd(ctx, &redis.XAddArgs{
-					Stream: "websites",
-					Values: map[string]any{
-						"site": string(data),
-					},
-				}).Result()
-				fmt.Print(response)
+				// Making it run in a go routine for concurrency
+				go redis_utils.Xadd(client,data)
 			}
 
 		}(db, client)
 		fmt.Println("iteration completed")
-		time.Sleep(3 * time.Second)
+		time.Sleep(180 * time.Second)
 	}
 }
