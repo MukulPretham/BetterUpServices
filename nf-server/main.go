@@ -14,11 +14,16 @@ import (
 
 func main() {
 	godotenv.Load()
+
 	client := utils.CreateRedisClient("localhost:6379", 0, "", 2)
-	_, err := utils.CreateRedisGroup(client, "notifications", "notificationGroup")
+	
+	err := utils.CreateRedisGroup(client, "notifications", "notificationGroup")
 	if err != nil {
 		log.Fatal(err)
+	}else{
+		fmt.Println("group already exist or it has been created")
 	}
+
 	for {
 		readRes, readErr := utils.ReadXGroup(client, []string{"notifications", ">"}, "notificationGroup")
 		if readErr != nil {
@@ -27,7 +32,6 @@ func main() {
 		currMessage := readRes[0].Values["site"].(string)
 		m := make(map[string]string)
 		if err := json.Unmarshal([]byte(currMessage), &m); err == nil {
-			fmt.Println(m["siteId"])
 			db := helpers.ConnectDB()
 			sqlDB, Serr := db.DB()
 			if Serr != nil {
@@ -41,7 +45,7 @@ func main() {
 				"To: "+"\r\n"+
 				"Subject: Website Down Alert\r\n"+
 				"MIME-Version: 1.0\r\n"+
-				"Content-Type: text/plain; charset=\"UTF-8\"\r\n\r\n you webiste with sidtId: %s was down", m["siteId"]) +
+				"Content-Type: text/plain; charset=\"UTF-8\"\r\n\r\n you webiste with sidtId: %s was down in the regionId %s", m["siteId"],m["regionId"]) +
 				" "
 			err := SendMain(mails, msg)
 			if err != nil {

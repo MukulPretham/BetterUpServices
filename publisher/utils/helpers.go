@@ -17,15 +17,15 @@ func CreateRedisClient(Addr string,DB int, Password string, Protocol int) *redis
 	})
 }
 
-func CreateRedisGroup(client *redis.Client, streamName string, gorupName string)(string,error){
+func CreateRedisGroup(client *redis.Client, streamName string, gorupName string) error{
 	ctx := context.Background()
 	_, err := client.XGroupCreateMkStream(ctx, streamName, gorupName, "$").Result()
 	if err != nil {
 		if err.Error() != "BUSYGROUP Consumer Group name already exists" {
-			return "",fmt.Errorf("redis error: %v",err)
+			return fmt.Errorf("redis error: %v",err)
 		}
 	}
-	return "group already exist",nil
+	return nil
 }
 
 func ReadXGroup(client *redis.Client ,stream []string,gorupName string,)([]redis.XMessage,error){
